@@ -35,10 +35,20 @@ export async function main() {
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
       filter: {
-        property: 'published',
-        checkbox: {
-          equals: false
-        }
+        and: [
+          {
+            property: 'published',
+            checkbox: {
+              equals: false
+            }
+          },
+          {
+            property: 'done',
+            checkbox: {
+              equals: true
+            }
+          }
+        ]
       }
     });
 
@@ -50,10 +60,17 @@ export async function main() {
           continue;
         }
 
-        // Skip if publish property is not true
+        // Skip if published property is not true
         const publishedProperty = page.properties.published;
         if (!publishedProperty || publishedProperty.type !== 'checkbox' || publishedProperty.checkbox) {
           console.warn(`Skipping page ${page.id}: not published`);
+          continue;
+        }
+
+        // Skip if done property is not true
+        const doneProperty = page.properties.done;
+        if (!doneProperty || doneProperty.type !== 'checkbox' || !doneProperty.checkbox) {
+          console.warn(`Skipping page ${page.id}: not done`);
           continue;
         }
 

@@ -80,9 +80,20 @@ describe('Notion to Astro converter', () => {
   test('should use original page title for filename', async () => {
 
     // Mock Notion client response
-    const mockPage: Partial<PageObjectResponse> = {
+    const mockPage: PageObjectResponse = {
       id: 'test-page-id',
       object: 'page',
+      parent: { type: 'database_id', database_id: 'test-db' },
+      created_time: '2024-01-01T00:00:00.000Z',
+      last_edited_time: '2024-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: 'user-id' },
+      last_edited_by: { object: 'user', id: 'user-id' },
+      cover: null,
+      icon: null,
+      archived: false,
+      url: 'https://notion.so/test-page',
+      in_trash: false,
+      public_url: null,
       properties: {
         title: {
           id: 'title-id',
@@ -110,11 +121,15 @@ describe('Notion to Astro converter', () => {
       }
     };
 
-    MockClient.mockImplementation(() => {
-      return {
+    (Client as jest.Mock).mockImplementation(() => ({
         databases: {
           query: jest.fn().mockResolvedValue({
-            results: [mockPage]
+            type: 'page_or_database',
+            page_or_database: {},
+            object: 'list',
+            results: [mockPage],
+            next_cursor: null,
+            has_more: false
           })
         },
         blocks: { retrieve: jest.fn() },
@@ -122,8 +137,7 @@ describe('Notion to Astro converter', () => {
         users: { retrieve: jest.fn() },
         search: jest.fn(),
         request: jest.fn()
-      } as unknown as Client;
-    });
+      } as unknown as Client));
 
     await main();
 
@@ -212,8 +226,13 @@ describe('Notion to Astro converter', () => {
           type: 'title',
           title: [{ plain_text: 'Published Page', type: 'text', text: { content: 'Published Page', link: null }, annotations: { bold: false, italic: false, strikethrough: false, underline: false, code: false, color: 'default' }, href: null }]
         },
-        publish: {
-          id: 'publish-id',
+        published: {
+          id: 'published-id',
+          type: 'checkbox',
+          checkbox: true
+        },
+        done: {
+          id: 'done-id',
           type: 'checkbox',
           checkbox: true
         }
@@ -247,10 +266,20 @@ describe('Notion to Astro converter', () => {
 
     // Verify that the correct filter was used
     expect(queryFilter).toEqual({
-      property: 'publish',
-      checkbox: {
-        equals: true
-      }
+      and: [
+        {
+          property: 'published',
+          checkbox: {
+            equals: true
+          }
+        },
+        {
+          property: 'done',
+          checkbox: {
+            equals: true
+          }
+        }
+      ]
     });
 
     // Verify that the published page was processed
@@ -282,8 +311,13 @@ describe('Notion to Astro converter', () => {
           type: 'title',
           title: [{ plain_text: 'Unpublished Page', type: 'text', text: { content: 'Unpublished Page', link: null }, annotations: { bold: false, italic: false, strikethrough: false, underline: false, code: false, color: 'default' }, href: null }]
         },
-        publish: {
-          id: 'publish-id',
+        published: {
+          id: 'published-id',
+          type: 'checkbox',
+          checkbox: false
+        },
+        done: {
+          id: 'done-id',
           type: 'checkbox',
           checkbox: false
         }
@@ -314,7 +348,123 @@ describe('Notion to Astro converter', () => {
     expect(fs.writeFileSync).not.toHaveBeenCalled();
   });
 
-  test('should handle pages without publish property', async () => {
+  test('should skip pages with published=true but done=false', async () => {
+    const mockPublishedButNotDonePage: PageObjectResponse = {
+      id: 'published-not-done-page-id',
+      object: 'page',
+      created_time: '2024-01-01T00:00:00.000Z',
+      last_edited_time: '2024-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: 'user-id' },
+      last_edited_by: { object: 'user', id: 'user-id' },
+      cover: null,
+      icon: null,
+      parent: { type: 'database_id', database_id: 'database-id' },
+      archived: false,
+      url: 'https://notion.so/page-id',
+      in_trash: false,
+      public_url: null,
+      properties: {
+        title: {
+          id: 'title-id',
+          type: 'title',
+          title: [{ plain_text: 'Published But Not Done Page', type: 'text', text: { content: 'Published But Not Done Page', link: null }, annotations: { bold: false, italic: false, strikethrough: false, underline: false, code: false, color: 'default' }, href: null }]
+        },
+        published: {
+          id: 'published-id',
+          type: 'checkbox',
+          checkbox: true
+        },
+        done: {
+          id: 'done-id',
+          type: 'checkbox',
+          checkbox: false
+        }
+      }
+    };
+
+    const mockClient = createMockClient();
+    (mockClient.databases.query as jest.Mock<Promise<QueryDatabaseResponse>>).mockResolvedValue({
+      type: 'page_or_database',
+      page_or_database: {},
+      object: 'list',
+      results: [mockPublishedButNotDonePage],
+      next_cursor: null,
+      has_more: false
+    });
+    (mockClient.blocks.children.list as jest.Mock<Promise<ListBlockChildrenResponse>>).mockResolvedValue({
+      type: 'block',
+      block: {},
+      object: 'list',
+      results: [],
+      next_cursor: null,
+      has_more: false
+    });
+
+    await main();
+
+    // Verify that no files were written since the page is not done
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test('should skip pages with done=true but published=false', async () => {
+    const mockDoneButNotPublishedPage: PageObjectResponse = {
+      id: 'done-not-published-page-id',
+      object: 'page',
+      created_time: '2024-01-01T00:00:00.000Z',
+      last_edited_time: '2024-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: 'user-id' },
+      last_edited_by: { object: 'user', id: 'user-id' },
+      cover: null,
+      icon: null,
+      parent: { type: 'database_id', database_id: 'database-id' },
+      archived: false,
+      url: 'https://notion.so/page-id',
+      in_trash: false,
+      public_url: null,
+      properties: {
+        title: {
+          id: 'title-id',
+          type: 'title',
+          title: [{ plain_text: 'Done But Not Published Page', type: 'text', text: { content: 'Done But Not Published Page', link: null }, annotations: { bold: false, italic: false, strikethrough: false, underline: false, code: false, color: 'default' }, href: null }]
+        },
+        published: {
+          id: 'published-id',
+          type: 'checkbox',
+          checkbox: false
+        },
+        done: {
+          id: 'done-id',
+          type: 'checkbox',
+          checkbox: true
+        }
+      }
+    };
+
+    const mockClient = createMockClient();
+    (mockClient.databases.query as jest.Mock<Promise<QueryDatabaseResponse>>).mockResolvedValue({
+      type: 'page_or_database',
+      page_or_database: {},
+      object: 'list',
+      results: [mockDoneButNotPublishedPage],
+      next_cursor: null,
+      has_more: false
+    });
+    (mockClient.blocks.children.list as jest.Mock<Promise<ListBlockChildrenResponse>>).mockResolvedValue({
+      type: 'block',
+      block: {},
+      object: 'list',
+      results: [],
+      next_cursor: null,
+      has_more: false
+    });
+
+    await main();
+
+    // Verify that no files were written since the page is not published
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test('should handle pages without required properties', async () => {
     const mockPageWithoutPublish: PageObjectResponse = {
       id: 'no-publish-page-id',
       object: 'page',
@@ -339,22 +489,22 @@ describe('Notion to Astro converter', () => {
     };
 
     const mockClient = createMockClient();
-    mockClient.databases.query.mockResolvedValue({
-      type: 'page',
-      page: {},
+    (mockClient.databases.query as jest.Mock<Promise<QueryDatabaseResponse>>).mockResolvedValue({
+      type: 'page_or_database',
+      page_or_database: {},
       object: 'list',
       results: [mockPageWithoutPublish],
       next_cursor: null,
       has_more: false
-    } as QueryDatabaseResponse);
-    mockClient.blocks.children.list.mockResolvedValue({
+    });
+    (mockClient.blocks.children.list as jest.Mock<Promise<ListBlockChildrenResponse>>).mockResolvedValue({
       type: 'block',
       block: {},
       object: 'list',
       results: [],
       next_cursor: null,
       has_more: false
-    } as ListBlockChildrenResponse);
+    });
 
     await main();
 
@@ -383,8 +533,13 @@ describe('Notion to Astro converter', () => {
           type: 'title',
           title: []
         },
-        publish: {
-          id: 'publish-id',
+        published: {
+          id: 'published-id',
+          type: 'checkbox',
+          checkbox: true
+        },
+        done: {
+          id: 'done-id',
           type: 'checkbox',
           checkbox: true
         }
@@ -392,22 +547,22 @@ describe('Notion to Astro converter', () => {
     };
 
     const mockClient = createMockClient();
-    mockClient.databases.query.mockResolvedValue({
-      type: 'page',
-      page: {},
+    (mockClient.databases.query as jest.Mock<Promise<QueryDatabaseResponse>>).mockResolvedValue({
+      type: 'page_or_database',
+      page_or_database: {},
       object: 'list',
       results: [mockPage],
       next_cursor: null,
       has_more: false
-    } as QueryDatabaseResponse);
-    mockClient.blocks.children.list.mockResolvedValue({
+    });
+    (mockClient.blocks.children.list as jest.Mock<Promise<ListBlockChildrenResponse>>).mockResolvedValue({
       type: 'block',
       block: {},
       object: 'list',
       results: [],
       next_cursor: null,
       has_more: false
-    } as ListBlockChildrenResponse);
+    });
 
     await main();
 

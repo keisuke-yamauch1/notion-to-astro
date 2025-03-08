@@ -46,8 +46,8 @@ describe('convertNotionToAstro', () => {
       icon: null,
       archived: false,
       url: 'https://notion.so/test-page',
-      public_url: null,
       in_trash: false,
+      public_url: null,
       properties: {
         title: {
           id: 'title-id',
@@ -73,15 +73,15 @@ describe('convertNotionToAstro', () => {
     };
 
     // Mock empty blocks response
-    const mockResponse: ListBlockChildrenResponse = {
+    const mockResponse = {
       type: 'block',
       block: {},
       object: 'list',
       next_cursor: null,
       has_more: false,
       results: [] as BlockObjectResponse[]
-    };
-    mockNotion.blocks.children.list.mockResolvedValue(mockResponse);
+    } as ListBlockChildrenResponse;
+    mockNotion.blocks.children.list.mockResolvedValue(mockResponse as unknown as ListBlockChildrenResponse);
 
     const markdown = await convertNotionToAstro(mockNotion, mockPage);
 
@@ -214,14 +214,16 @@ describe('convertNotionToAstro', () => {
       id: 'page-id',
       object: 'page',
       parent: { type: 'database_id', database_id: 'test-db' },
-      created_time: '2024-01-01',
-      last_edited_time: '2024-01-01',
+      created_time: '2024-01-01T00:00:00.000Z',
+      last_edited_time: '2024-01-01T00:00:00.000Z',
       created_by: { object: 'user', id: 'user-id' },
       last_edited_by: { object: 'user', id: 'user-id' },
       cover: null,
       icon: null,
       archived: false,
       url: 'https://notion.so/test-page',
+      in_trash: false,
+      public_url: null,
       properties: {
         title: {
           id: 'title-id',
