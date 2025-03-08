@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Convert Notion articles to Astro markdown format",
   "main": "src/index.ts",
+  "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "ts-node src/index.ts",
-    "test": "jest"
+    "start": "node --loader ts-node/esm src/index.ts",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.14",
