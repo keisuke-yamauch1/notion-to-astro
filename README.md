@@ -77,10 +77,14 @@ npm start
 
 各markdownファイルは以下の形式で出力されます：
 
+descriptionは、Notionページのプロパティに設定されていない場合、本文の最初の70文字が自動的に使用されます。改行は半角スペースに変換されます。
+
 ```markdown
 ---
 title: "ページタイトル"
+description: "ページの説明"
 date: "2024-03-08"
+tags: ["タグ1", "タグ2"]
 draft: false
 ---
 

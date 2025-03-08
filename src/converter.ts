@@ -10,9 +10,17 @@ type NotionProperty = PageObjectResponse['properties'][string];
 export async function convertNotionToAstro(notion: Client, page: PageObjectResponse): Promise<string> {
   const blocks = await fetchAllBlocks(notion, page.id);
   const metadata = await extractMetadata(page);
+  const content = await convertBlocksToMarkdown(blocks);
+
+  // Extract first N characters for description if not already set
+  if (!metadata.description) {
+    const plainText = content.replace(/[#*`>-]/g, '').trim();  // Remove markdown symbols
+    const singleLine = plainText.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();  // Convert newlines to spaces
+    metadata.description = singleLine.slice(0, 70) + '...';  // First 70 chars
+  }
 
   let markdown = generateFrontMatter(metadata);
-  markdown += await convertBlocksToMarkdown(blocks);
+  markdown += content;
 
   return markdown;
 }
@@ -39,6 +47,7 @@ async function fetchAllBlocks(notion: Client, blockId: string): Promise<BlockObj
 async function extractMetadata(page: PageObjectResponse) {
   const metadata: Record<string, any> = {
     title: '',
+    description: '',
     date: new Date().toISOString().split('T')[0],
     draft: false,
   };
@@ -49,6 +58,8 @@ async function extractMetadata(page: PageObjectResponse) {
       const property = value as NotionProperty;
       if (property.type === 'title' && property.title.length > 0) {
         metadata.title = property.title.map((t: RichTextItemResponse) => t.plain_text).join('');
+      } else if (property.type === 'rich_text' && key.toLowerCase() === 'description') {
+        metadata.description = property.rich_text.map((t: RichTextItemResponse) => t.plain_text).join('');
       } else if (property.type === 'multi_select') {
         metadata.tags = property.multi_select.map(tag => tag.name);
       }

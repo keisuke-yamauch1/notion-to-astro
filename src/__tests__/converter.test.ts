@@ -69,6 +69,26 @@ describe('convertNotionToAstro', () => {
             },
           ],
         },
+        description: {
+          id: 'description-id',
+          type: 'rich_text',
+          rich_text: [
+            {
+              type: 'text',
+              text: { content: 'Test Description', link: null },
+              plain_text: 'Test Description',
+              annotations: {
+                bold: false,
+                italic: false,
+                code: false,
+                strikethrough: false,
+                color: 'default',
+                underline: false
+              },
+              href: null
+            },
+          ],
+        },
       },
     };
 
@@ -88,8 +108,107 @@ describe('convertNotionToAstro', () => {
     // Verify frontmatter
     expect(markdown).toContain('---');
     expect(markdown).toContain('title: "Test Page"');
+    expect(markdown).toContain('description: "Test Description"');
     expect(markdown).toContain('draft: false');
     expect(markdown).toMatch(/date: \d{4}-\d{2}-\d{2}/);
+  });
+
+  test('should use first paragraph as description', async () => {
+    const mockPage: PageObjectResponse = {
+      id: 'page-id',
+      object: 'page',
+      parent: { type: 'database_id', database_id: 'test-db' },
+      created_time: '2024-01-01T00:00:00.000Z',
+      last_edited_time: '2024-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: 'user-id' },
+      last_edited_by: { object: 'user', id: 'user-id' },
+      cover: null,
+      icon: null,
+      archived: false,
+      url: 'https://notion.so/test-page',
+      public_url: null,
+      in_trash: false,
+      properties: {
+        title: {
+          id: 'title-id',
+          type: 'title',
+          title: [
+            {
+              type: 'text',
+              text: { content: 'Test Page', link: null },
+              plain_text: 'Test Page',
+              annotations: {
+                bold: false,
+                italic: false,
+                code: false,
+                strikethrough: false,
+                color: 'default',
+                underline: false
+              },
+              href: null
+            },
+          ],
+        },
+      },
+    };
+
+    const mockBlocks = [
+      {
+        type: 'heading_1',
+        heading_1: {
+          rich_text: [{
+            type: 'text',
+            text: { content: 'Main Heading', link: null },
+            plain_text: 'Main Heading',
+            annotations: {
+              bold: false,
+              italic: false,
+              code: false,
+              strikethrough: false,
+              color: 'default',
+              underline: false
+            },
+            href: null
+          }]
+        },
+        object: 'block',
+        id: 'block-id-1'
+      },
+      {
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [{
+            type: 'text',
+            text: { content: 'This is the first line\nof content that will\nbe used for description.\nThis part should be truncated.', link: null },
+            plain_text: 'This is the first line\nof content that will\nbe used for description.\nThis part should be truncated.',
+            annotations: {
+              bold: false,
+              italic: false,
+              code: false,
+              strikethrough: false,
+              color: 'default',
+              underline: false
+            },
+            href: null
+          }]
+        },
+        object: 'block',
+        id: 'block-id-2'
+      }
+    ];
+
+    mockNotion.blocks.children.list.mockResolvedValueOnce({
+      type: 'block',
+      block: {},
+      object: 'list',
+      next_cursor: null,
+      has_more: false,
+      results: mockBlocks
+    } as ListBlockChildrenResponse);
+
+    const markdown = await convertNotionToAstro(mockNotion, mockPage);
+
+    expect(markdown).toContain('description: "This is the first line of content that will be used for"');
   });
 
   test('should handle various block types', async () => {
