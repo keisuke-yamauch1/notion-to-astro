@@ -1,102 +1,102 @@
-# Notion to Astro Markdown Converter
+# Notion to Astro Markdown コンバーター
 
-A tool to convert Notion pages to Astro-compatible markdown files. This tool fetches content from your Notion database and converts it into markdown files that can be used with Astro's content collections.
+NotionのページをAstro対応のmarkdownファイルに変換するツールです。Notionデータベースからコンテンツを取得し、Astroのコンテンツコレクションで使用できるmarkdownファイルに変換します。
 
-## Features
+## 機能
 
-- Converts Notion pages to Astro-compatible markdown
-- Preserves formatting (bold, italic, code, etc.)
-- Generates proper frontmatter
-- Supports multiple block types:
-  - Paragraphs
-  - Headings (H1, H2, H3)
-  - Bulleted lists
-  - Numbered lists
-  - Code blocks
-  - Quotes
-  - Links
+- NotionページをAstro対応のmarkdownに変換
+- フォーマットを保持（太字、斜体、コードなど）
+- 適切なfrontmatterを生成
+- 以下のブロックタイプをサポート：
+  - 段落
+  - 見出し（H1、H2、H3）
+  - 箇条書きリスト
+  - 番号付きリスト
+  - コードブロック
+  - 引用
+  - リンク
 
-## Installation
+## インストール
 
-1. Clone this repository:
+1. リポジトリをクローン：
 ```bash
 git clone https://github.com/yourusername/notion-to-astro.git
 cd notion-to-astro
 ```
 
-2. Install dependencies:
+2. 依存関係をインストール：
 ```bash
 npm install
 ```
 
-3. Copy the example environment file and configure it:
+3. 環境設定ファイルをコピーして設定：
 ```bash
 cp .env.example .env
 ```
 
-## Configuration
+## 設定
 
-Edit the `.env` file and set the following variables:
+`.env`ファイルを編集して、以下の変数を設定してください：
 
-- `NOTION_TOKEN`: Your Notion integration token
-- `NOTION_DATABASE_ID`: The ID of your Notion database
-- `OUTPUT_DIR`: Directory where markdown files will be saved (default: src/content/blog)
+- `NOTION_TOKEN`: NotionインテグレーションのAPIトークン
+- `NOTION_DATABASE_ID`: NotionデータベースのID
+- `OUTPUT_DIR`: markdownファイルの保存先ディレクトリ（デフォルト: src/content/blog）
 
-### Getting Notion Credentials
+### Notionの認証情報の取得方法
 
-1. Create a Notion integration:
-   - Go to https://www.notion.so/my-integrations
-   - Click "New integration"
-   - Give it a name and submit
-   - Copy the "Internal Integration Token"
+1. Notionインテグレーションの作成：
+   - https://www.notion.so/my-integrations にアクセス
+   - 「新しいインテグレーション」をクリック
+   - 名前を付けて作成
+   - 「Internal Integration Token」をコピー
 
-2. Share your database with the integration:
-   - Open your Notion database
-   - Click "Share" and invite your integration
-   - Copy the database ID from the URL (the part after the workspace name and before the "?")
+2. データベースとインテグレーションの共有：
+   - Notionデータベースを開く
+   - 「共有」をクリックしてインテグレーションを招待
+   - URLからデータベースIDをコピー（ワークスペース名の後、「?」の前の部分）
 
-## Usage
+## 使用方法
 
-1. Build the project:
+1. プロジェクトのビルド：
 ```bash
 npm run build
 ```
 
-2. Run the converter:
+2. コンバーターの実行：
 ```bash
 npm start
 ```
 
-The tool will:
-1. Fetch all pages from your Notion database
-2. Convert them to markdown format
-3. Save them in the specified output directory
-4. Generate filenames based on page titles
+ツールは以下の処理を行います：
+1. Notionデータベースから全てのページを取得
+2. markdownフォーマットに変換
+3. 指定されたディレクトリに保存
+4. ページタイトルに基づいてファイル名を生成
 
-## Output Format
+## 出力フォーマット
 
-Each markdown file will include:
+各markdownファイルは以下の形式で出力されます：
 
 ```markdown
 ---
-title: "Your Page Title"
+title: "ページタイトル"
 date: "2024-03-08"
 draft: false
 ---
 
-Your content here...
+コンテンツ...
 ```
 
-## Error Handling
+## エラー処理
 
-- The tool will continue processing other pages if one page fails
-- Errors are logged to the console
-- Each page conversion is handled independently
+- 1つのページで失敗しても、他のページの処理は継続
+- エラーはコンソールに出力
+- 各ページの変換は独立して処理
 
-## Contributing
+## コントリビューション
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+コントリビューションを歓迎します！Pull Requestをお気軽に提出してください。
 
-## License
+## ライセンス
 
 MIT License
