@@ -22,6 +22,9 @@ export async function convertNotionToAstro(notion: Client, page: PageObjectRespo
   let markdown = generateFrontMatter(metadata);
   markdown += content;
 
+  // Normalize multiple empty lines to a single empty line
+  markdown = markdown.replace(/\n{3,}/g, '\n\n');
+
   return markdown;
 }
 
@@ -99,21 +102,21 @@ async function convertBlocksToMarkdown(blocks: BlockObjectResponse[]): Promise<s
 function convertBlockToMarkdown(block: BlockObjectResponse): string {
   switch (block.type) {
     case 'paragraph':
-      return convertParagraph(block.paragraph) + '\n\n';
+      return convertParagraph(block.paragraph) + '  \n';
     case 'heading_1':
-      return `# ${convertRichText(block.heading_1.rich_text)}\n\n`;
+      return `# ${convertRichText(block.heading_1.rich_text)}  \n`;
     case 'heading_2':
-      return `## ${convertRichText(block.heading_2.rich_text)}\n\n`;
+      return `## ${convertRichText(block.heading_2.rich_text)}  \n`;
     case 'heading_3':
-      return `### ${convertRichText(block.heading_3.rich_text)}\n\n`;
+      return `### ${convertRichText(block.heading_3.rich_text)}  \n`;
     case 'bulleted_list_item':
-      return `- ${convertRichText(block.bulleted_list_item.rich_text)}\n`;
+      return `- ${convertRichText(block.bulleted_list_item.rich_text)}  \n`;
     case 'numbered_list_item':
-      return `1. ${convertRichText(block.numbered_list_item.rich_text)}\n`;
+      return `1. ${convertRichText(block.numbered_list_item.rich_text)}  \n`;
     case 'code':
-      return `\`\`\`${block.code.language}\n${convertRichText(block.code.rich_text)}\n\`\`\`\n\n`;
+      return `\`\`\`${block.code.language}\n${convertRichText(block.code.rich_text)}\n\`\`\`\n`;
     case 'quote':
-      return `> ${convertRichText(block.quote.rich_text)}\n\n`;
+      return `> ${convertRichText(block.quote.rich_text)}  \n`;
     default:
       return '';
   }

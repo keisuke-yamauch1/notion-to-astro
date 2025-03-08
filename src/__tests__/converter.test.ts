@@ -324,8 +324,7 @@ describe('convertNotionToAstro', () => {
     const markdown = await convertNotionToAstro(mockNotion, mockPage);
 
     // Verify content conversion
-    expect(markdown).toContain('Normal text');
-    expect(markdown).toContain('# Heading 1');
+    expect(markdown).toContain('Normal text  \n# Heading 1  \n');
   });
 
   test('should handle tags from multi_select property', async () => {
@@ -390,6 +389,8 @@ describe('convertNotionToAstro', () => {
     // Verify frontmatter includes tags in correct format
     expect(markdown).toContain('tags: ["tag1", "tag2"]');
     expect(markdown).toMatch(/---\ntitle: "Test Page"\ndate: \d{4}-\d{2}-\d{2}\ndraft: false\ntags: \["tag1", "tag2"\]\n---/);
+    // Verify no extra empty lines
+    expect(markdown).not.toContain('\n\n\n');
   });
 
   test('should handle rich text formatting', async () => {
@@ -501,6 +502,8 @@ describe('convertNotionToAstro', () => {
     const markdown = await convertNotionToAstro(mockNotion, mockPage);
 
     // Verify formatting
-    expect(markdown).toContain('**Bold text** and *italic text*');
+    expect(markdown).toContain('**Bold text** and *italic text*  \n');
+    // Verify no extra empty lines
+    expect(markdown).not.toContain('\n\n\n');
   });
 });
