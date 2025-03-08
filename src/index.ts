@@ -94,6 +94,12 @@ export async function main() {
         const filePath = path.join(OUTPUT_DIR, `${filename}.md`);
         fs.writeFileSync(filePath, markdown, 'utf8');
 
+        // Output the results to standard output
+        console.log('\n=== Generated Content ===');
+        console.log(`File: ${filePath}`);
+        console.log('Content:');
+        console.log(markdown);
+        console.log('======================\n');
         console.log(`Converted page "${filename}" (${page.id})`);
       } catch (error) {
         console.error(`Error converting page ${page.id}:`, error);

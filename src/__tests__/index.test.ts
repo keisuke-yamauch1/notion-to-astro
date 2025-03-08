@@ -13,7 +13,7 @@ jest.mock('fs', () => ({
 }));
 jest.mock('@notionhq/client', () => {
   return {
-    Client: jest.fn().mockImplementation((options) => createMockClient())
+    Client: jest.fn().mockImplementation((options) => createMockClient()) as unknown as typeof Client
   };
 });
 
@@ -75,6 +75,8 @@ describe('Notion to Astro converter', () => {
     // Reset fs mock
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+    // Spy on console.log
+    jest.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   test('should use original page title for filename', async () => {
@@ -147,6 +149,14 @@ describe('Notion to Astro converter', () => {
       expect.any(String),
       'utf8'
     );
+
+    // Verify console output
+    expect(console.log).toHaveBeenCalledWith('\n=== Generated Content ===');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('File:'));
+    expect(console.log).toHaveBeenCalledWith('Content:');
+    expect(console.log).toHaveBeenCalledWith(expect.any(String)); // markdown content
+    expect(console.log).toHaveBeenCalledWith('======================\n');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Converted page "Test Page Title"'));
   });
 
   test('should handle special characters in title', async () => {
