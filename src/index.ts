@@ -1,14 +1,19 @@
 import { Client } from '@notionhq/client';
-import { convertNotionToAstro } from './converter';
+import { convertNotionToAstro } from './converter.js';
+import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+function isFullPage(page: any): page is PageObjectResponse {
+  return 'properties' in page && page.object === 'page';
+}
+
 dotenv.config();
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
-const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+const DATABASE_ID = process.env.NOTION_DATABASE_ID as string;
 const OUTPUT_DIR = process.env.OUTPUT_DIR || 'src/content/blog';
 
 if (!NOTION_TOKEN || !DATABASE_ID) {
@@ -24,15 +29,34 @@ const notion = new Client({
   auth: NOTION_TOKEN,
 });
 
-async function main() {
+export async function main() {
   try {
     // Fetch pages from Notion database
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
+      filter: {
+        property: 'published',
+        checkbox: {
+          equals: false
+        }
+      }
     });
 
     for (const page of response.results) {
       try {
+        // Skip if not a full page
+        if (!isFullPage(page)) {
+          console.warn(`Skipping page ${page.id}: not a full page object`);
+          continue;
+        }
+
+        // Skip if publish property is not true
+        const publishedProperty = page.properties.published;
+        if (!publishedProperty || publishedProperty.type !== 'checkbox' || publishedProperty.checkbox) {
+          console.warn(`Skipping page ${page.id}: not published`);
+          continue;
+        }
+
         // Convert each page to Astro markdown
         const markdown = await convertNotionToAstro(notion, page);
 
@@ -42,9 +66,8 @@ async function main() {
           const titleText = page.properties.title.title
             .map(t => t.plain_text)
             .join('')
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
+            .replace(/[<>:"/\\|?*]+/g, '-') // Replace invalid filename characters
+            .replace(/^-+|-+$/g, '');       // Remove leading/trailing hyphens
           if (titleText) {
             filename = titleText;
           }
@@ -65,4 +88,7 @@ async function main() {
   }
 }
 
-main();
+// Only run when this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

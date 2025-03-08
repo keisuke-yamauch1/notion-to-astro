@@ -1,32 +1,38 @@
 import { Client } from '@notionhq/client';
-import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints';
+import type { 
+  PageObjectResponse,
+  BlockObjectResponse,
+  RichTextItemResponse
+} from '@notionhq/client/build/src/api-endpoints.js';
+
+type NotionProperty = PageObjectResponse['properties'][string];
 
 export async function convertNotionToAstro(notion: Client, page: PageObjectResponse): Promise<string> {
   const blocks = await fetchAllBlocks(notion, page.id);
   const metadata = await extractMetadata(page);
-  
+
   let markdown = generateFrontMatter(metadata);
   markdown += await convertBlocksToMarkdown(blocks);
-  
+
   return markdown;
 }
 
-async function fetchAllBlocks(notion: Client, blockId: string) {
-  const blocks = [];
-  let cursor;
-  
+async function fetchAllBlocks(notion: Client, blockId: string): Promise<BlockObjectResponse[]> {
+  const blocks: BlockObjectResponse[] = [];
+  let cursor: string | undefined;
+
   while (true) {
     const response = await notion.blocks.children.list({
       block_id: blockId,
       start_cursor: cursor || undefined,
     });
-    
-    blocks.push(...response.results);
-    
+
+    blocks.push(...response.results as BlockObjectResponse[]);
+
     if (!response.has_more) break;
-    cursor = response.next_cursor;
+    cursor = response.next_cursor || undefined;
   }
-  
+
   return blocks;
 }
 
@@ -40,8 +46,9 @@ async function extractMetadata(page: PageObjectResponse) {
   if ('properties' in page) {
     const properties = page.properties;
     for (const [key, value] of Object.entries(properties)) {
-      if (value.type === 'title' && value.title.length > 0) {
-        metadata.title = value.title.map(t => t.plain_text).join('');
+      const property = value as NotionProperty;
+      if (property.type === 'title' && property.title.length > 0) {
+        metadata.title = property.title.map((t: RichTextItemResponse) => t.plain_text).join('');
       }
     }
   }
@@ -58,17 +65,17 @@ function generateFrontMatter(metadata: Record<string, any>): string {
   return frontMatter;
 }
 
-async function convertBlocksToMarkdown(blocks: any[]): Promise<string> {
+async function convertBlocksToMarkdown(blocks: BlockObjectResponse[]): Promise<string> {
   let markdown = '';
-  
+
   for (const block of blocks) {
     markdown += convertBlockToMarkdown(block);
   }
-  
+
   return markdown;
 }
 
-function convertBlockToMarkdown(block: any): string {
+function convertBlockToMarkdown(block: BlockObjectResponse): string {
   switch (block.type) {
     case 'paragraph':
       return convertParagraph(block.paragraph) + '\n\n';
@@ -91,14 +98,14 @@ function convertBlockToMarkdown(block: any): string {
   }
 }
 
-function convertParagraph(paragraph: any): string {
+function convertParagraph(paragraph: { rich_text: RichTextItemResponse[] }): string {
   return convertRichText(paragraph.rich_text);
 }
 
-function convertRichText(richText: any[]): string {
+function convertRichText(richText: RichTextItemResponse[]): string {
   return richText.map(text => {
     let content = text.plain_text;
-    
+
     if (text.annotations.bold) {
       content = `**${content}**`;
     }
@@ -111,11 +118,11 @@ function convertRichText(richText: any[]): string {
     if (text.annotations.strikethrough) {
       content = `~~${content}~~`;
     }
-    
+
     if (text.href) {
       content = `[${content}](${text.href})`;
     }
-    
+
     return content;
   }).join('');
 }
