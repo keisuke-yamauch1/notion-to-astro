@@ -49,6 +49,8 @@ async function extractMetadata(page: PageObjectResponse) {
       const property = value as NotionProperty;
       if (property.type === 'title' && property.title.length > 0) {
         metadata.title = property.title.map((t: RichTextItemResponse) => t.plain_text).join('');
+      } else if (property.type === 'multi_select') {
+        metadata.tags = property.multi_select.map(tag => tag.name);
       }
     }
   }
@@ -59,7 +61,14 @@ async function extractMetadata(page: PageObjectResponse) {
 function generateFrontMatter(metadata: Record<string, any>): string {
   let frontMatter = '---\n';
   for (const [key, value] of Object.entries(metadata)) {
-    const formattedValue = key === 'date' ? value : JSON.stringify(value);
+    let formattedValue;
+    if (key === 'date') {
+      formattedValue = value;
+    } else if (key === 'tags' && Array.isArray(value)) {
+      formattedValue = `[${value.map(tag => `"${tag}"`).join(', ')}]`;
+    } else {
+      formattedValue = JSON.stringify(value);
+    }
     frontMatter += `${key}: ${formattedValue}\n`;
   }
   frontMatter += '---\n\n';

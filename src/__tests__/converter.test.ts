@@ -209,6 +209,70 @@ describe('convertNotionToAstro', () => {
     expect(markdown).toContain('# Heading 1');
   });
 
+  test('should handle tags from multi_select property', async () => {
+    const mockPage: PageObjectResponse = {
+      id: 'page-id',
+      object: 'page',
+      parent: { type: 'database_id', database_id: 'test-db' },
+      created_time: '2024-01-01T00:00:00.000Z',
+      last_edited_time: '2024-01-01T00:00:00.000Z',
+      created_by: { object: 'user', id: 'user-id' },
+      last_edited_by: { object: 'user', id: 'user-id' },
+      cover: null,
+      icon: null,
+      archived: false,
+      url: 'https://notion.so/test-page',
+      public_url: null,
+      in_trash: false,
+      properties: {
+        title: {
+          id: 'title-id',
+          type: 'title',
+          title: [
+            {
+              type: 'text',
+              text: { content: 'Test Page', link: null },
+              plain_text: 'Test Page',
+              annotations: {
+                bold: false,
+                italic: false,
+                code: false,
+                strikethrough: false,
+                color: 'default',
+                underline: false
+              },
+              href: null
+            }
+          ],
+        },
+        Tags: {
+          id: 'tags-id',
+          type: 'multi_select',
+          multi_select: [
+            { id: 'tag1-id', name: 'tag1', color: 'blue' },
+            { id: 'tag2-id', name: 'tag2', color: 'red' }
+          ]
+        }
+      },
+    } as PageObjectResponse;
+
+    const mockResponse = {
+      type: 'block',
+      block: {},
+      object: 'list',
+      next_cursor: null,
+      has_more: false,
+      results: [] as BlockObjectResponse[]
+    } as ListBlockChildrenResponse;
+    mockNotion.blocks.children.list.mockResolvedValueOnce(mockResponse);
+
+    const markdown = await convertNotionToAstro(mockNotion, mockPage);
+
+    // Verify frontmatter includes tags in correct format
+    expect(markdown).toContain('tags: ["tag1", "tag2"]');
+    expect(markdown).toMatch(/---\ntitle: "Test Page"\ndate: \d{4}-\d{2}-\d{2}\ndraft: false\ntags: \["tag1", "tag2"\]\n---/);
+  });
+
   test('should handle rich text formatting', async () => {
     const mockPage = {
       id: 'page-id',
