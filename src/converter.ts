@@ -59,7 +59,8 @@ async function extractMetadata(page: PageObjectResponse) {
 function generateFrontMatter(metadata: Record<string, any>): string {
   let frontMatter = '---\n';
   for (const [key, value] of Object.entries(metadata)) {
-    frontMatter += `${key}: ${JSON.stringify(value)}\n`;
+    const formattedValue = key === 'date' ? value : JSON.stringify(value);
+    frontMatter += `${key}: ${formattedValue}\n`;
   }
   frontMatter += '---\n\n';
   return frontMatter;

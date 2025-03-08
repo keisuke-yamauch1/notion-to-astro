@@ -25,7 +25,7 @@ describe('convertNotionToAstro', () => {
     mockNotion = {
       blocks: {
         children: {
-          list: jest.fn()
+          list: jest.fn().mockImplementation(() => Promise.resolve({} as ListBlockChildrenResponse))
         }
       }
     } as unknown as jest.Mocked<Client>;
@@ -81,7 +81,7 @@ describe('convertNotionToAstro', () => {
       has_more: false,
       results: [] as BlockObjectResponse[]
     } as ListBlockChildrenResponse;
-    mockNotion.blocks.children.list.mockResolvedValue(mockResponse as unknown as ListBlockChildrenResponse);
+    mockNotion.blocks.children.list.mockResolvedValueOnce(mockResponse);
 
     const markdown = await convertNotionToAstro(mockNotion, mockPage);
 
@@ -89,7 +89,7 @@ describe('convertNotionToAstro', () => {
     expect(markdown).toContain('---');
     expect(markdown).toContain('title: "Test Page"');
     expect(markdown).toContain('draft: false');
-    expect(markdown).toMatch(/date: "\d{4}-\d{2}-\d{2}"/);
+    expect(markdown).toMatch(/date: \d{4}-\d{2}-\d{2}/);
   });
 
   test('should handle various block types', async () => {
@@ -313,7 +313,7 @@ describe('convertNotionToAstro', () => {
         }
       ]
     };
-    (mockNotion.blocks.children.list as jest.Mock).mockResolvedValue(mockResponse);
+    mockNotion.blocks.children.list.mockResolvedValueOnce(mockResponse);
 
     const markdown = await convertNotionToAstro(mockNotion, mockPage);
 
