@@ -59,7 +59,11 @@ async function extractMetadata(page: PageObjectResponse) {
     const properties = page.properties;
     for (const [key, value] of Object.entries(properties)) {
       const property = value as NotionProperty;
-      if (property.type === 'title' && property.title.length > 0) {
+      if (property.type === 'unique_id') {
+        const prefix = property.unique_id.prefix || '';
+        const number = property.unique_id.number || '';
+        metadata.id = `${prefix}${number}`;
+      } else if (property.type === 'title' && property.title.length > 0) {
         metadata.title = property.title.map((t: RichTextItemResponse) => t.plain_text).join('');
       } else if (property.type === 'rich_text' && key.toLowerCase() === 'description') {
         metadata.description = property.rich_text.map((t: RichTextItemResponse) => t.plain_text).join('');
@@ -74,7 +78,16 @@ async function extractMetadata(page: PageObjectResponse) {
 
 function generateFrontMatter(metadata: Record<string, any>): string {
   let frontMatter = '---\n';
+
+  // First output id if it exists
+  if (metadata.id) {
+    frontMatter += `id: ${metadata.id}\n`;
+  }
+
+  // Then output other fields
   for (const [key, value] of Object.entries(metadata)) {
+    if (key === 'id') continue; // Skip id as it's already handled
+
     let formattedValue;
     if (key === 'date') {
       formattedValue = value;

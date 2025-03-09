@@ -81,6 +81,7 @@ descriptionは、Notionページのプロパティに設定されていない場
 
 ```markdown
 ---
+id: ページID
 title: "ページタイトル"
 description: "ページの説明"
 date: "2024-03-08"

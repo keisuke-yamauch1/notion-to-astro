@@ -69,6 +69,14 @@ describe('convertNotionToAstro', () => {
             },
           ],
         },
+        ID: {
+          id: 'id-field',
+          type: 'unique_id',
+          unique_id: {
+            prefix: 'TEST-',
+            number: 123
+          }
+        },
         description: {
           id: 'description-id',
           type: 'rich_text',
@@ -107,9 +115,11 @@ describe('convertNotionToAstro', () => {
 
     // Verify frontmatter
     expect(markdown).toContain('---');
+    expect(markdown).toContain('id: TEST-123');
     expect(markdown).toContain('title: "Test Page"');
     expect(markdown).toContain('description: "Test Description"');
     expect(markdown).toContain('draft: false');
+    expect(markdown).toMatch(/---\nid: TEST-123\ntitle: "Test Page"/);
     expect(markdown).toMatch(/date: \d{4}-\d{2}-\d{2}/);
   });
 
@@ -148,6 +158,14 @@ describe('convertNotionToAstro', () => {
               href: null
             },
           ],
+        },
+        ID: {
+          id: 'id-field',
+          type: 'unique_id',
+          unique_id: {
+            prefix: 'TEST-',
+            number: 123
+          }
         },
       },
     };
@@ -363,6 +381,14 @@ describe('convertNotionToAstro', () => {
             }
           ],
         },
+        ID: {
+          id: 'id-field',
+          type: 'unique_id',
+          unique_id: {
+            prefix: 'TEST-',
+            number: 123
+          }
+        },
         Tags: {
           id: 'tags-id',
           type: 'multi_select',
@@ -386,9 +412,12 @@ describe('convertNotionToAstro', () => {
 
     const markdown = await convertNotionToAstro(mockNotion, mockPage);
 
-    // Verify frontmatter includes tags in correct format
+    // Verify frontmatter includes tags and id in correct format
     expect(markdown).toContain('tags: ["tag1", "tag2"]');
-    expect(markdown).toMatch(/---\ntitle: "Test Page"\ndate: \d{4}-\d{2}-\d{2}\ndraft: false\ntags: \["tag1", "tag2"\]\n---/);
+    expect(markdown).toContain('id: TEST-123');
+    expect(markdown).toMatch(/---\nid: TEST-123\ntitle: "Test Page"/);
+    expect(markdown).toMatch(/tags: \["tag1", "tag2"\]/);
+    expect(markdown).toMatch(/date: \d{4}-\d{2}-\d{2}/);
     // Verify no extra empty lines
     expect(markdown).not.toContain('\n\n\n');
   });
@@ -428,6 +457,14 @@ describe('convertNotionToAstro', () => {
               href: null
             }
           ],
+        },
+        ID: {
+          id: 'id-field',
+          type: 'unique_id',
+          unique_id: {
+            prefix: 'TEST-',
+            number: 123
+          }
         },
       },
     } as PageObjectResponse;
